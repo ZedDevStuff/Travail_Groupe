@@ -35,3 +35,10 @@ class EmpruntSerializer(serializers.ModelSerializer):
                         "Cet utilisateur a déjà un emprunt en cours pour ce livre."
                     )
         return attrs
+
+
+class ReservationSerializer(serializers.Serializer):
+    """Stub serializer for book reservations."""
+
+    utilisateur_id = serializers.IntegerField()
+    livre_id = serializers.IntegerField()
