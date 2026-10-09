@@ -1,0 +1,75 @@
+services:
+  backend:
+    build: 
+    # pas de "ports" : Django n'est joignable que par Kong
+
+  kong-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kong
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 5s
+      retries: 10
+
+  kong-migrations:
+    image: kong:2.8
+    command: kong migrations bootstrap
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-db
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+    depends_on:
+      kong-db:
+        condition: service_healthy
+
+  kong:
+    image: kong:2.8
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-db
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    depends_on:
+      kong-migrations:
+        condition: service_completed_successfully
+      backend:
+        condition: service_started
+
+  konga-db:
+    image: postgres:9.6
+    environment:
+      POSTGRES_USER: konga
+      POSTGRES_DB: konga
+      POSTGRES_PASSWORD: konga
+    volumes:
+      - konga_data:/var/lib/postgresql/data
+
+  konga:
+    image: pantsel/konga
+    environment:
+      DB_ADAPTER: postgres
+      DB_HOST: konga-db
+      DB_USER: konga
+      DB_PASSWORD: konga
+      DB_DATABASE: konga
+      NODE_ENV: development
+    ports:
+      - "1337:1337"
+    depends_on:
+      - konga-db
+      - kong
+
+volumes:
+  kong_data:
+  konga_data:
