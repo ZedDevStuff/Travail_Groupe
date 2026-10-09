@@ -1,6 +1,6 @@
 services:
   backend:
-    build: 
+    build: .
     # pas de "ports" : Django n'est joignable que par Kong
 
   kong-db:
